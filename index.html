@@ -37,44 +37,61 @@
     </div>
 
     <script>
-        const CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRCoE7I08iRza6QrUuyDNqA6FFnCuuANjsBf6hogreujMgtZtPld4kichpuA-S592Gw2erVx5xLRCuR/pub?output=csv';
+    // 1. 確保這裡的網址是「發佈到網路」後的 CSV 連結
+    let CSV_URL = '你的_GOOGLE_SHEET_CSV_連結';
 
-        async function fetchData() {
-            try {
-                const response = await fetch(CSV_URL);
-                const data = await response.text();
-                const rows = data.split('\n').slice(1); // 移除標題列
+    // 自動修正網址：確保它是以 csv 格式輸出
+    if (CSV_URL.includes('/edit')) {
+        CSV_URL = CSV_URL.replace(/\/edit.*$/, '/export?format=csv');
+    }
 
-                const tableBody = document.getElementById('device-table');
-                tableBody.innerHTML = '';
+    async function fetchData() {
+        const tableBody = document.getElementById('device-table');
+        const updateStatus = document.getElementById('last-update');
 
-                rows.forEach(row => {
-                    const cols = row.split(',');
-                    if (cols.length < 4) return;
+        try {
+            updateStatus.innerText = '正在同步數據...';
+            const response = await fetch(CSV_URL);
+            
+            if (!response.ok) throw new Error('網路回應不正常');
+            
+            const data = await response.text();
+            // 使用正則表達式處理換行，避免不同作業系統的換行符號問題
+            const rows = data.split(/\r?\n/).filter(row => row.trim() !== '').slice(1);
+            
+            tableBody.innerHTML = '';
 
-                    const [id, location, firmware, temp, status, lastSeen] = cols;
-                    const statusClass = status.trim() === 'Online' ? 'dot-online' : 'dot-offline';
-                    const statusTextColor = status.trim() === 'Online' ? 'text-green-400' : 'text-red-400';
+            rows.forEach(row => {
+                // 處理 CSV 欄位，考慮到內容可能有逗號的情況（簡單處理）
+                const cols = row.split(',').map(c => c.replace(/"/g, '').trim());
+                if (cols.length < 5) return;
 
-                    tableBody.innerHTML += `
-                        <tr class="hover:bg-gray-700 transition-colors">
-                            <td class="px-6 py-4 whitespace-nowrap font-medium text-white">${id}</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-gray-400">${location}</td>
-                            <td class="px-6 py-4 whitespace-nowrap flex items-center ${statusTextColor}">
-                                <span class="${statusClass}"></span> ${status}
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${lastSeen}</td>
-                        </tr>
-                    `;
-                });
-                document.getElementById('last-update').innerText = '最後更新: ' + new Date().toLocaleTimeString();
-            } catch (error) {
-                console.error('Error fetching data:', error);
-            }
+                const [id, location, firmware, temp, status, lastSeen] = cols;
+                const isOnline = status.toLowerCase() === 'online';
+                const statusClass = isOnline ? 'dot-online' : 'dot-offline';
+                const statusTextColor = isOnline ? 'text-green-400' : 'text-red-400';
+
+                tableBody.innerHTML += `
+                    <tr class="hover:bg-gray-700 transition-colors border-b border-gray-700">
+                        <td class="px-6 py-4 whitespace-nowrap font-medium text-white">${id}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-gray-400">${location}</td>
+                        <td class="px-6 py-4 whitespace-nowrap flex items-center ${statusTextColor}">
+                            <span class="${statusClass}"></span> ${status}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${lastSeen || 'N/A'}</td>
+                    </tr>
+                `;
+            });
+            updateStatus.innerText = '最後更新: ' + new Date().toLocaleTimeString();
+        } catch (error) {
+            console.error('Fetch error:', error);
+            updateStatus.innerText = '錯誤: 無法讀取資料';
+            tableBody.innerHTML = `<tr><td colspan="4" class="px-6 py-4 text-center text-red-500">無法載入數據，請確認 Google Sheets 已發佈為 CSV 格式。</td></tr>`;
         }
+    }
 
-        fetchData();
-        setInterval(fetchData, 30000); // 每 30 秒自動更新
-    </script>
+    fetchData();
+    setInterval(fetchData, 30000); 
+</script>
 </body>
 </html>
