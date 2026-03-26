@@ -15,7 +15,7 @@ A high-performance, responsive kiosk-mode dashboard designed for digital signage
 
 ## 🚀 Deployment
 This project is hosted on **GitHub Pages**. 
-Live Demo: [[Your GitHub Pages URL]](https://yi-jun-lin88.github.io/IAdea-Status-Dashboard/)
+Live Demo: [[My GitHub Pages URL]](https://yi-jun-lin88.github.io/IAdea-Status-Dashboard/)
 
 ## 🤖 Engineering Insights
 - Solved **CORS (Cross-Origin Resource Sharing)** limitations without a dedicated backend by implementing a proxy-based fetch strategy.
